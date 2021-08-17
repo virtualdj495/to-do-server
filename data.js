@@ -87,13 +87,22 @@ app.post(
 (req,res) =>  {
   const errors = validationResult(req);
   if(!errors.isEmpty()){
-    console.log('click')
     return res.json({errors: errors.array()});
   }
   var loggedUser = req.body;
   var userList = JSON.parse(fs.readFileSync('users.txt', 'utf8'));
   var index = lodash.find(userList , (exp) => exp.username === loggedUser.username);
   const encryptedID = cryptr.encrypt(JSON.stringify(index));
+  var loggedtoken = {ip: req.body.ip , token: encryptedID};
+  var tokenLists = JSON.parse(fs.readFileSync('logged.txt', 'utf8'));
+  tokenLists.push(loggedtoken);
+  fs.writeFile('logged.txt', JSON.stringify(tokenLists), err => {
+    if (err) {
+      console.error(err)
+      return;
+    }
+  });
+
   res.json(encryptedID);
 });
 
