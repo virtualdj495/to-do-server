@@ -27,14 +27,15 @@ app.get('/',(req,res) =>{
   res.json(JSON.parse(fs.readFileSync('users.txt', 'utf8'))); 
 })
 
-app.get('/:id', (req, res) => {
+app.get('/:id', async (req, res) => {
+  setTimeout(() => {
+
     var listOftasks = [];
     try {
-      var loggedUserId =JSON.parse(cryptr.decrypt(req.params.id)).id;
+      var loggedUserId =JSON.parse(cryptr.decrypt(req.params.id));
     } catch(err) {
       res.status(401).json();
     }
-    
     try {
         const data =JSON.parse(fs.readFileSync('todolist.txt', 'utf8'));
         for (let task of data) {
@@ -45,13 +46,16 @@ app.get('/:id', (req, res) => {
     } catch (err) {
         console.error(err);
     }
+    for ( let task of listOftasks) {
+      task.userId = cryptr.encrypt(task.userId);
+    }
     res.json(listOftasks);
-    
+  }, 1000);
 });
 
 app.post('/',(req, res) => {
     var data=req.body;
-    data.userId = JSON.parse(cryptr.decrypt(data.userId)).id;
+    data.userId = JSON.parse(cryptr.decrypt(data.userId));
     var tasksList = JSON.parse(fs.readFileSync('todolist.txt', 'utf8'));
     if (lodash.find(tasksList,data) !== undefined) {
       tasksList.splice(lodash.findIndex(tasksList,data),1);
@@ -92,30 +96,19 @@ app.post(
   var loggedUser = req.body;
   var userList = JSON.parse(fs.readFileSync('users.txt', 'utf8'));
   var index = lodash.find(userList , (exp) => exp.username === loggedUser.username);
-  const encryptedID = cryptr.encrypt(JSON.stringify(index));
-  var loggedtoken = {ip: req.body.ip , token: encryptedID};
-  var tokenLists = JSON.parse(fs.readFileSync('logged.txt', 'utf8'));
-  tokenLists.push(loggedtoken);
-  fs.writeFile('logged.txt', JSON.stringify(tokenLists), err => {
-    if (err) {
-      console.error(err)
-      return;
-    }
-  });
-
+  const encryptedID = cryptr.encrypt(JSON.stringify(index.id));
   res.json(encryptedID);
 });
 
 app.get('/users', (req, res) => {
   var stream;
   try {
-      const data = fs.readFileSync('users.txt', 'utf8');
-      stream =JSON.parse(data);
+    const data = fs.readFileSync('users.txt', 'utf8');
+    stream =JSON.parse(data);
   } catch (err) {
-      console.error(err);
+    console.error(err);
   }
-  res.json(stream); 
-  
+  res.json(stream);
 });
 
 app.post(
